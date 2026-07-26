@@ -1,0 +1,15 @@
+{
+  "name": "胖达数字乐园",
+  "short_name": "数字乐园",
+  "description": "和胖达老师一起，看见数字、摸到数字",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#FFF6E6",
+  "theme_color": "#FFF6E6",
+  "icons": [
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/icon.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
