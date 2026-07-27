@@ -1,5 +1,5 @@
 /* 胖达数字乐园 离线缓存 */
-const CACHE = 'panda-math-v1';
+const CACHE = 'panda-math-v2';
 const ASSETS = [
   './', './index.html', './manifest.webmanifest',
   './assets/bg_meadow.png', './assets/panda.png', './assets/panda_cheer.png',
@@ -26,6 +26,18 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  // 页面本体：网络优先(有网立刻拿到新版)，断网回落缓存
+  if (e.request.mode === 'navigate') {
+    e.respondWith(
+      fetch(e.request).then(r => {
+        const cp = r.clone();
+        caches.open(CACHE).then(c => c.put('./index.html', cp));
+        return r;
+      }).catch(() => caches.match('./index.html'))
+    );
+    return;
+  }
+  // 素材：缓存优先
   e.respondWith(
     caches.match(e.request, { ignoreSearch: true }).then(hit =>
       hit || fetch(e.request).then(r => {
@@ -34,7 +46,7 @@ self.addEventListener('fetch', e => {
           caches.open(CACHE).then(c => c.put(e.request, cp));
         }
         return r;
-      }).catch(() => e.request.mode === 'navigate' ? caches.match('./index.html') : undefined)
+      }).catch(() => undefined)
     )
   );
 });

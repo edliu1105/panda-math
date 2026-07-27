@@ -540,6 +540,11 @@ document.addEventListener('pointerdown',unlockAudio,{capture:true});
 let lastTtsAttempt=0;
 function ttsGestureUnlock(){
   if(S.ttsOk||S.muted||!S.lastLine)return;
+  try{ // 引擎正在说话/排队 = 语音其实是好的(iOS 的 onstart 经常不触发) → 兜底永久退休
+    if(speechSynthesis.speaking||speechSynthesis.pending){S.ttsOk=true;return;}
+  }catch(e){}
+  // 刚刚(1.5秒内)有语音请求在起播路上 → 绝不插嘴，避免掐断数数
+  if(performance.now()-(S.lastSayAt||0)<1500)return;
   const now=performance.now();
   if(now-lastTtsAttempt<700)return;
   lastTtsAttempt=now;
@@ -580,11 +585,21 @@ try{
   };
 }catch(e){}
 function doSpeak(u){
-  try{speechSynthesis.resume();speechSynthesis.speak(u);}catch(e){}
+  try{
+    speechSynthesis.resume();speechSynthesis.speak(u);
+    // iOS 的 onstart 不可靠：450ms 后查引擎实际状态来确认"语音已工作"
+    setTimeout(()=>{try{
+      if(speechSynthesis.speaking||speechSynthesis.pending){
+        S.ttsOk=true;
+        const t=$('#audioTip');if(t)t.classList.remove('show');
+      }
+    }catch(e){}},450);
+  }catch(e){}
 }
 function say(text,{interrupt=true,rate=.92,pitch=1.1,remember=true,onend}={}){
   if(remember)S.lastLine=text;
   if(S.muted){onend&&onend();return;}
+  S.lastSayAt=performance.now();
   try{
     if(!VOICE)pickVoice();
     const u=new SpeechSynthesisUtterance(text);
